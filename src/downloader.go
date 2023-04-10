@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -11,7 +12,7 @@ import (
 
 var wg sync.WaitGroup
 
-func download(url string, threads int) {
+func download(url string, threads int, savePath string) {
 	defer func() {
 		if r := recover(); r != nil {
 			log.Fatal("A fatal error has occurred: ", r)
@@ -32,8 +33,6 @@ func download(url string, threads int) {
 	individualLength := length / threads
 	remainder := length % threads
 
-	contentBody := make([]string, threads+1)
-
 	for i := 0; i < threads; i++ {
 		wg.Add(1)
 
@@ -41,10 +40,18 @@ func download(url string, threads int) {
 		max := individualLength * (i + 1)
 
 		if i == threads-1 {
-			max += remainder
+			max += remainder + 1
 		}
 
 		go func(min int, max int, i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					log.Fatal("A fatal error has occurred: ", r)
+				}
+			}()
+
+			fmt.Println("Downloading part " + strconv.Itoa(i) + " from " + strconv.Itoa(min) + " to " + strconv.Itoa(max))
+
 			client := &http.Client{}
 			req, err := http.NewRequest("GET", url, nil)
 			if err != nil {
@@ -65,15 +72,33 @@ func download(url string, threads int) {
 				}
 			}(resp.Body)
 
+			fmt.Println("Thread " + strconv.Itoa(i) + "status: " + resp.Status + " " + resp.Proto)
+
 			reader, err := io.ReadAll(resp.Body)
 			if err != nil {
 				panic(err)
 			}
 
-			contentBody[i] = string(reader)
-			err = os.WriteFile(strconv.Itoa(i), []byte(contentBody[i]), 0x777)
+			contentBody := string(reader)
+			err = os.WriteFile(strconv.Itoa(i), []byte(contentBody), 0x777)
 			if err != nil {
-				return
+				panic(err)
+			}
+
+			f, err := os.OpenFile(savePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0x777)
+			if err != nil {
+				panic(err)
+			}
+
+			defer func(f *os.File) {
+				err := f.Close()
+				if err != nil {
+					panic(err)
+				}
+			}(f)
+
+			if _, err := f.WriteString(contentBody); err != nil {
+				panic(err)
 			}
 
 			defer wg.Done()
