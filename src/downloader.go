@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
 	"sync"
 )
@@ -80,26 +81,26 @@ func download(url string, threads int, savePath string) {
 			}
 
 			contentBody := string(reader)
-			err = os.WriteFile(strconv.Itoa(i), []byte(contentBody), 0x777)
+			err = os.WriteFile(filepath.Join("/tmp", strconv.Itoa(i)), []byte(contentBody), 0x777)
 			if err != nil {
 				panic(err)
 			}
 
-			f, err := os.OpenFile(savePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0x777)
-			if err != nil {
-				panic(err)
-			}
-
-			defer func(f *os.File) {
-				err := f.Close()
-				if err != nil {
-					panic(err)
-				}
-			}(f)
-
-			if _, err := f.WriteString(contentBody); err != nil {
-				panic(err)
-			}
+			//f, err := os.OpenFile(savePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0x777)
+			//if err != nil {
+			//	panic(err)
+			//}
+			//
+			//defer func(f *os.File) {
+			//	err := f.Close()
+			//	if err != nil {
+			//		panic(err)
+			//	}
+			//}(f)
+			//
+			//if _, err := f.WriteString(contentBody); err != nil {
+			//	panic(err)
+			//}
 
 			defer wg.Done()
 		}(min, max, i)

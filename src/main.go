@@ -8,5 +8,5 @@ type Downloader struct {
 }
 
 func main() {
-	download("https://sgp1.digitaloceanspaces.com/do-spaces-1/paper.zip", 10, "paper.zip")
+	download("https://do-spaces-1.simonfalke.studio/file.txt", 10, "/Users/brandonli/file.txt")
 }
