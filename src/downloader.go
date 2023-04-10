@@ -81,7 +81,7 @@ func download(url string, threads int, savePath string) {
 			}
 
 			contentBody := string(reader)
-			err = os.WriteFile(filepath.Join("/tmp", strconv.Itoa(i)), []byte(contentBody), 0x777)
+			err = os.WriteFile(filepath.Join("/tmp", "part"+strconv.Itoa(i)), []byte(contentBody), 0x666)
 			if err != nil {
 				panic(err)
 			}
@@ -107,4 +107,63 @@ func download(url string, threads int, savePath string) {
 	}
 
 	wg.Wait()
+
+	if stat, err := os.Stat(filepath.Dir(savePath)); os.IsNotExist(err) {
+		if err := os.MkdirAll(filepath.Dir(savePath), 0x666); err != nil {
+			panic(err)
+		}
+	} else if !stat.IsDir() {
+		panic("Save path's parent is not a directory")
+	}
+
+	f, err := os.OpenFile(savePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0x666)
+	if err != nil {
+		panic(err)
+	}
+	defer func(f *os.File) {
+		err := f.Close()
+		if err != nil {
+			panic(err)
+		}
+	}(f)
+
+	if err := f.Chmod(0x666); err != nil {
+		panic(err)
+	}
+
+	for i := 0; i < threads; i++ {
+		fTmp, err := os.OpenFile(filepath.Join("/tmp", "part"+strconv.Itoa(i)), os.O_RDONLY, 0x666)
+		if err != nil {
+			panic(err)
+		}
+
+		content, err := io.ReadAll(fTmp)
+		if err != nil {
+			panic(err)
+		}
+
+		err = fTmp.Close()
+		if err != nil {
+			panic(err)
+		}
+
+		//f, err = os.OpenFile(savePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0x777)
+		//if err != nil {
+		//	panic(err)
+		//}
+
+		if _, err := f.Write(content); err != nil {
+			panic(err)
+		}
+		if err := f.Chmod(0x666); err != nil {
+			panic(err)
+		}
+
+		err = f.Close()
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	fmt.Println("Download complete!")
 }
