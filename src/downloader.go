@@ -158,13 +158,6 @@ func download(url string, threads int, savePath string) {
 		if err := f.Chmod(0x666); err != nil {
 			panic(err)
 		}
-
-		if i == threads-1 {
-			err = f.Close()
-			if err != nil {
-				panic(err)
-			}
-		}
 	}
 
 	fmt.Println("Download complete!")
