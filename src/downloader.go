@@ -159,9 +159,11 @@ func download(url string, threads int, savePath string) {
 			panic(err)
 		}
 
-		err = f.Close()
-		if err != nil {
-			panic(err)
+		if i == threads-1 {
+			err = f.Close()
+			if err != nil {
+				panic(err)
+			}
 		}
 	}
 
