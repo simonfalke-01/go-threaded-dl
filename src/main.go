@@ -13,8 +13,8 @@ type Downloader struct {
 }
 
 func printHelp() {
-	println("Usage: get [url] [threads] [save path]")
-	println("Example: get https://example.com/file.zip 10 /home/user/Downloads/file.zip")
+	println("Usage: gtd [url] [threads] [save path]")
+	println("Example: gtd https://example.com/file.zip 10 /home/user/Downloads/file.zip")
 }
 
 func IsValid(fp string) bool {
