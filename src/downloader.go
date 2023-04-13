@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"github.com/vbauerster/mpb/v8"
+	"github.com/vbauerster/mpb/v8/decor"
 	"io"
 	"log"
 	"net/http"
@@ -12,8 +14,13 @@ import (
 )
 
 var wg sync.WaitGroup
+var wgBar sync.WaitGroup
 
-func download(url string, threads int, savePath string) {
+func download(d Downloader) {
+	url := d.url
+	threads := d.threads
+	savePath := d.savePath
+
 	defer func() {
 		if r := recover(); r != nil {
 			log.Fatal("A fatal error has occurred: ", r)
@@ -34,6 +41,10 @@ func download(url string, threads int, savePath string) {
 	individualLength := length / threads
 	remainder := length % threads
 
+	p := mpb.New(mpb.WithWaitGroup(&wgBar))
+	numBars := threads
+	wgBar.Add(numBars)
+
 	for i := 0; i < threads; i++ {
 		wg.Add(1)
 
@@ -44,6 +55,21 @@ func download(url string, threads int, savePath string) {
 			max += remainder + 1
 		}
 
+		name := fmt.Sprintf("Thread %d ", i)
+		//name := fmt.Sprintf("Thread#%d:", i)
+		bar := p.AddBar(int64(individualLength),
+			mpb.PrependDecorators(
+				decor.Name(name),
+				decor.Counters(decor.UnitKiB, "%.2f / %.2f"),
+				decor.Percentage(decor.WCSyncSpace),
+			),
+			mpb.AppendDecorators(
+				decor.EwmaETA(decor.ET_STYLE_GO, 30),
+				decor.Name(" ] "),
+				decor.EwmaSpeed(decor.UnitKiB, "%.2f", 30),
+			),
+		)
+
 		go func(min int, max int, i int) {
 			defer func() {
 				if r := recover(); r != nil {
@@ -51,7 +77,7 @@ func download(url string, threads int, savePath string) {
 				}
 			}()
 
-			fmt.Println("Downloading part " + strconv.Itoa(i) + " from " + strconv.Itoa(min) + " to " + strconv.Itoa(max))
+			//fmt.Println("Downloading part " + strconv.Itoa(i) + " from " + strconv.Itoa(min) + " to " + strconv.Itoa(max))
 
 			client := &http.Client{}
 			req, err := http.NewRequest("GET", url, nil)
@@ -73,50 +99,43 @@ func download(url string, threads int, savePath string) {
 				}
 			}(resp.Body)
 
-			fmt.Println("Thread " + strconv.Itoa(i) + "status: " + resp.Status + " " + resp.Proto)
+			proxyReader := bar.ProxyReader(resp.Body)
 
-			reader, err := io.ReadAll(resp.Body)
+			defer func(proxyReader io.ReadCloser) {
+				err := proxyReader.Close()
+				if err != nil {
+					panic(err)
+				}
+			}(proxyReader)
+
+			reader, err := io.ReadAll(proxyReader)
 			if err != nil {
 				panic(err)
 			}
 
 			contentBody := string(reader)
-			err = os.WriteFile(filepath.Join("/tmp", "part"+strconv.Itoa(i)), []byte(contentBody), 0x666)
+			err = os.WriteFile(filepath.Join("/tmp", "part"+strconv.Itoa(i)), []byte(contentBody), 0666)
 			if err != nil {
 				panic(err)
 			}
 
-			//f, err := os.OpenFile(savePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0x777)
-			//if err != nil {
-			//	panic(err)
-			//}
-			//
-			//defer func(f *os.File) {
-			//	err := f.Close()
-			//	if err != nil {
-			//		panic(err)
-			//	}
-			//}(f)
-			//
-			//if _, err := f.WriteString(contentBody); err != nil {
-			//	panic(err)
-			//}
-
 			defer wg.Done()
+			defer wgBar.Done()
 		}(min, max, i)
 	}
 
 	wg.Wait()
+	p.Wait()
 
 	if stat, err := os.Stat(filepath.Dir(savePath)); os.IsNotExist(err) {
-		if err := os.MkdirAll(filepath.Dir(savePath), 0x666); err != nil {
+		if err := os.MkdirAll(filepath.Dir(savePath), 0666); err != nil {
 			panic(err)
 		}
 	} else if !stat.IsDir() {
 		panic("Save path's parent is not a directory")
 	}
 
-	f, err := os.OpenFile(savePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0x666)
+	f, err := os.OpenFile(savePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
 	if err != nil {
 		panic(err)
 	}
@@ -127,12 +146,12 @@ func download(url string, threads int, savePath string) {
 		}
 	}(f)
 
-	if err := f.Chmod(0x666); err != nil {
+	if err := f.Chmod(0666); err != nil {
 		panic(err)
 	}
 
 	for i := 0; i < threads; i++ {
-		fTmp, err := os.OpenFile(filepath.Join("/tmp", "part"+strconv.Itoa(i)), os.O_RDONLY, 0x666)
+		fTmp, err := os.OpenFile(filepath.Join("/tmp", "part"+strconv.Itoa(i)), os.O_RDONLY, 0666)
 		if err != nil {
 			panic(err)
 		}
@@ -147,15 +166,15 @@ func download(url string, threads int, savePath string) {
 			panic(err)
 		}
 
-		//f, err = os.OpenFile(savePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0x777)
-		//if err != nil {
-		//	panic(err)
-		//}
+		err = os.Remove(filepath.Join("/tmp", "part"+strconv.Itoa(i)))
+		if err != nil {
+			panic(err)
+		}
 
 		if _, err := f.Write(content); err != nil {
 			panic(err)
 		}
-		if err := f.Chmod(0x666); err != nil {
+		if err := f.Chmod(0666); err != nil {
 			panic(err)
 		}
 	}
