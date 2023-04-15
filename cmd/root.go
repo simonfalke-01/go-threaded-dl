@@ -20,9 +20,9 @@ var (
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "gtd [url]",
+	Use:   "gdl [url]",
 	Short: "Multi-threaded content downloader written in Go",
-	Long: `gtd is a multi-threaded content downloader written in Go. It is designed to be as fast as possible, while also being as easy to use.
+	Long: `gdl is a multi-threaded content downloader written in Go. It is designed to be as fast as possible, while also being as easy to use.
 It is a lightweight alternative to other downloaders, such as aria2c, wget, and curl. Think of this as a multi-threaded version of wget.`,
 
 	Args: cobra.MinimumNArgs(1),
