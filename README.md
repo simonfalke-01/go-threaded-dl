@@ -2,13 +2,17 @@
 Multi-threaded content downloader written in Go
 
 ## Usage
+Provide URL. Threads and save path are optional. Default is 10 threads and the current directory.
 ```
-gtd <url> <threads> <output>
+gdl <url>
+gdl <url> -t <threads>
+gdl <url> -o <save-path>
+gdl <url> -t <threads> -o <save-path>
 ```
 
 ### Example
 ```
-gtd https://example.com/file.zip 4 ~/file.zip
+gdl https://do-spaces-1.simonfalke.studio/Hello\! -t 20 -o ~/Hello\!
 ```
 
 ## Installation
