@@ -36,5 +36,11 @@ After you are done, you can run the script with
 chmod +x ./install.sh && ./install.sh
 ```
 
+### Building
+A version of Go must be installed. Clone the repository and run
+```
+go build -v -o gdl .
+```
+
 ## License
 This project is licensed under there are literally no licenses to this (made by me). You can do whatever you want with this, but I would appreciate if you would give me credit.
