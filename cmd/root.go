@@ -41,6 +41,13 @@ func getCurrentDirectory() string {
 }
 
 func isValid(fp string) bool {
+	// Check if fp is a directory
+	if stat, err := os.Stat(fp); err == nil {
+		if stat.IsDir() {
+			return false
+		}
+	}
+
 	// Check if file already exists
 	if _, err := os.Stat(fp); err == nil {
 		return true
@@ -79,7 +86,7 @@ func appendTillNotExist(fp string) string {
 		return fp
 	}
 
-	for i := 0; true; i++ {
+	for i := 1; true; i++ {
 		if !checkIfExists(appendToFileName(fp, fmt.Sprintf(" (%d)", i))) {
 			return appendToFileName(fp, fmt.Sprintf(" (%d)", i))
 		}
