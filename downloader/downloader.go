@@ -1,4 +1,8 @@
-package main
+/*
+Copyright © 2023 simonfalke ziqibrandonli@gmail.com
+*/
+
+package downloader
 
 import (
 	"fmt"
@@ -8,18 +12,40 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"path/filepath"
 	"strconv"
 	"sync"
 )
 
+type Downloader struct {
+	Url      string
+	Threads  int
+	SavePath string
+}
+
+type safeFileContent struct {
+	mu sync.Mutex
+	v  map[int]string
+}
+
+func (f *safeFileContent) Set(part int, content string) {
+	f.mu.Lock()
+	f.v[part] = content
+	f.mu.Unlock()
+}
+
+func (f *safeFileContent) Value(part int) string {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.v[part]
+}
+
 var wg sync.WaitGroup
 var wgBar sync.WaitGroup
 
-func download(d Downloader) {
-	url := d.url
-	threads := d.threads
-	savePath := d.savePath
+func Download(d Downloader) {
+	url := d.Url
+	threads := d.Threads
+	savePath := d.SavePath
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -44,6 +70,8 @@ func download(d Downloader) {
 	p := mpb.New(mpb.WithWaitGroup(&wgBar))
 	numBars := threads
 	wgBar.Add(numBars)
+
+	fileContent := safeFileContent{v: make(map[int]string)}
 
 	for i := 0; i < threads; i++ {
 		wg.Add(1)
@@ -113,11 +141,7 @@ func download(d Downloader) {
 				panic(err)
 			}
 
-			contentBody := string(reader)
-			err = os.WriteFile(filepath.Join("/tmp", "part"+strconv.Itoa(i)), []byte(contentBody), 0666)
-			if err != nil {
-				panic(err)
-			}
+			fileContent.Set(i, string(reader))
 
 			defer wg.Done()
 			defer wgBar.Done()
@@ -127,18 +151,11 @@ func download(d Downloader) {
 	wg.Wait()
 	p.Wait()
 
-	if stat, err := os.Stat(filepath.Dir(savePath)); os.IsNotExist(err) {
-		if err := os.MkdirAll(filepath.Dir(savePath), 0666); err != nil {
-			panic(err)
-		}
-	} else if !stat.IsDir() {
-		panic("Save path's parent is not a directory")
-	}
-
 	f, err := os.OpenFile(savePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
 	if err != nil {
 		panic(err)
 	}
+
 	defer func(f *os.File) {
 		err := f.Close()
 		if err != nil {
@@ -151,27 +168,9 @@ func download(d Downloader) {
 	}
 
 	for i := 0; i < threads; i++ {
-		fTmp, err := os.OpenFile(filepath.Join("/tmp", "part"+strconv.Itoa(i)), os.O_RDONLY, 0666)
-		if err != nil {
-			panic(err)
-		}
+		content := fileContent.Value(i)
 
-		content, err := io.ReadAll(fTmp)
-		if err != nil {
-			panic(err)
-		}
-
-		err = fTmp.Close()
-		if err != nil {
-			panic(err)
-		}
-
-		err = os.Remove(filepath.Join("/tmp", "part"+strconv.Itoa(i)))
-		if err != nil {
-			panic(err)
-		}
-
-		if _, err := f.Write(content); err != nil {
+		if _, err := f.WriteString(content); err != nil {
 			panic(err)
 		}
 		if err := f.Chmod(0666); err != nil {
