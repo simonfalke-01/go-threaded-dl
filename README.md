@@ -37,7 +37,7 @@ chmod +x ./install.sh && ./install.sh
 ```
 
 ### Building
-A version of Go must be installed. Clone the repository and run
+A version of Go must be installed. Clone the repository and run:
 ```
 go build -v -o gdl .
 ```
