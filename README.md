@@ -1,4 +1,4 @@
-# go-threaded-dl
+# <img align="center" src="https://github.com/simonfalke-01/go-threaded-dl/blob/main/images/gdl_icon.webp?raw=true" width=200>
 Multi-threaded content downloader written in Go. By downloading a file with multiple connections (multiple threads), download speed can be drastically improved. </br>
 Downloading with 100 threads: </br>
 <img align="center" src="https://github.com/simonfalke-01/go-threaded-dl/blob/main/images/100_threads.png?raw=true">
