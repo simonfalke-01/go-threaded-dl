@@ -19,7 +19,7 @@ gdl https://do-spaces-1.simonfalke.studio/Hello\! -t 20 -o ~/Hello\!
 
 ## Installation
 go-threaded-dl can be installed on your system by running one of the commands below in your terminal.
-An installation script will be run. You must have git, and either `curl` or `wget` installed.
+An installation script will be run. You must have git, and either `curl` or `wget` installed.</br>
 Latest builds can be found under GitHub Actions [here](https://github.com/simonfalke-01/go-threaded-dl/actions).
 
 ### Commands
