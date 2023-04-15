@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
 if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-  curl -L "https://github.com/simonfalke-01/go-threaded-dl/releases/download/v1.0.0/gdl-linux" -o /usr/local/bin/gdl
+  curl -L "https://github.com/simonfalke-01/go-threaded-dl/releases/latest/download/gdl-linux" -o /usr/local/bin/gdl
 elif [[ "$OSTYPE" == "darwin"* ]]; then
-  curl -L "https://github.com/simonfalke-01/go-threaded-dl/releases/download/v1.0.0/gdl-darwin" -o /usr/local/bin/gdl
+  curl -L "https://github.com/simonfalke-01/go-threaded-dl/releases/latest/download/gdl-darwin" -o /usr/local/bin/gdl
 fi
 
 chmod +x /usr/local/bin/gdl
